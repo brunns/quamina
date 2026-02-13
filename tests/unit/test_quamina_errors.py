@@ -25,6 +25,14 @@ def test_library_not_found(when):
         QuaminaLibrary()
 
 
+def test_darwin_library_name(when):
+    """Test that Darwin/macOS uses .dylib extension."""
+    when(platform).system().thenReturn("Darwin")
+    when(pathlib.Path).exists(...).thenReturn(False)  # noqa: FBT003
+    with pytest.raises(QuaminaError, match="libquamina.dylib"):
+        QuaminaLibrary()
+
+
 def test_windows_library_name(when):
     """Test that Windows uses .dll extension."""
     when(platform).system().thenReturn("Windows")
