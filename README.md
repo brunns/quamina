@@ -197,11 +197,6 @@ Requires: build
 
 ```sh
 uv run pytest tests/performance/ --benchmark-only --benchmark-columns=min,mean,stddev,ops --benchmark-sort=name --quiet -s
-echo ""
-echo "📊 Performance Summary:"
-echo "  • Simple patterns: Python faster (FFI overhead)"
-echo "  • 100 patterns:    Quamina ~5x faster"
-echo "  • 1000 patterns:   Quamina ~40x faster ⭐"
 ```
 
 ### clean
