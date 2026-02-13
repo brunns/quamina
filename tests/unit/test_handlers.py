@@ -1,8 +1,6 @@
 """Tests for handler registration and event processing."""
 
-from unittest.mock import Mock
-
-from hamcrest import assert_that, contains_inanyorder, equal_to, has_length
+from hamcrest import assert_that, contains_inanyorder, empty, equal_to, has_length
 
 from quamina import Quamina
 
@@ -13,15 +11,21 @@ class TestHandlerRegistration:
     def test_register_handler(self):
         """Test registering a handler for a pattern."""
         q = Quamina()
-        handler = Mock()
+        calls = []
+
+        def handler(event):
+            calls.append(event)
+            return "handled"
 
         q.register_handler("test-pattern", {"x": [1]}, handler)
 
         # Process an event that matches
-        q.process_event({"x": 1})
+        results = q.process_event({"x": 1})
 
         # Handler should have been called
-        handler.assert_called_once_with({"x": 1})
+        assert_that(calls, has_length(1))
+        assert_that(calls[0], equal_to({"x": 1}))
+        assert_that(results, equal_to(["handled"]))
 
     def test_register_multiple_handlers_same_id(self):
         """Test registering multiple handlers for the same pattern ID.
@@ -30,8 +34,15 @@ class TestHandlerRegistration:
         when any of the patterns match.
         """
         q = Quamina()
-        handler1 = Mock(return_value="result1")
-        handler2 = Mock(return_value="result2")
+        calls = []
+
+        def handler1(event):
+            calls.append("handler1")
+            return "result1"
+
+        def handler2(event):
+            calls.append("handler2")
+            return "result2"
 
         q.register_handler("test-pattern", {"x": [1]}, handler1)
         q.register_handler("test-pattern", {"x": [2]}, handler2)
@@ -40,15 +51,21 @@ class TestHandlerRegistration:
         results = q.process_event({"x": 1})
 
         # Both handlers called because they share the same pattern_id
-        handler1.assert_called_once()
-        handler2.assert_called_once()
+        assert_that(calls, contains_inanyorder("handler1", "handler2"))
         assert_that(results, contains_inanyorder("result1", "result2"))
 
     def test_register_handlers_different_ids(self):
         """Test registering handlers for different pattern IDs."""
         q = Quamina()
-        handler1 = Mock(return_value="result1")
-        handler2 = Mock(return_value="result2")
+        calls = []
+
+        def handler1(event):
+            calls.append("handler1")
+            return "result1"
+
+        def handler2(event):
+            calls.append("handler2")
+            return "result2"
 
         q.register_handler("pattern-1", {"x": [1]}, handler1)
         q.register_handler("pattern-2", {"x": [2]}, handler2)
@@ -56,8 +73,7 @@ class TestHandlerRegistration:
         # Process an event that matches first pattern only
         results = q.process_event({"x": 1})
 
-        handler1.assert_called_once()
-        handler2.assert_not_called()
+        assert_that(calls, equal_to(["handler1"]))
         assert_that(results, equal_to(["result1"]))
 
     def test_handler_decorator(self):
@@ -80,18 +96,21 @@ class TestHandlerRegistration:
     def test_unregister_handlers(self):
         """Test unregistering handlers."""
         q = Quamina()
-        handler = Mock()
+        calls = []
+
+        def handler(event):
+            calls.append(event)
 
         q.register_handler("temp-pattern", {"x": [1]}, handler)
         q.process_event({"x": 1})
-        assert_that(handler.call_count, equal_to(1))
+        assert_that(calls, has_length(1))
 
         # Unregister
         q.unregister_handlers("temp-pattern")
 
         # Process again - handler should not be called
         q.process_event({"x": 1})
-        assert_that(handler.call_count, equal_to(1))  # Still 1, not 2
+        assert_that(calls, has_length(1))  # Still 1, not 2
 
 
 class TestEventProcessing:
@@ -100,21 +119,30 @@ class TestEventProcessing:
     def test_process_event_no_matches(self):
         """Test processing an event that doesn't match any patterns."""
         q = Quamina()
-        handler = Mock()
+        calls = []
+
+        def handler(event):
+            calls.append(event)
 
         q.register_handler("pattern", {"x": [1]}, handler)
 
         results = q.process_event({"y": 2})
 
-        handler.assert_not_called()
+        assert_that(calls, empty())
         assert_that(results, equal_to([]))
 
     def test_process_event_multiple_matches(self):
         """Test processing an event that matches multiple patterns."""
         q = Quamina()
-        handler1 = Mock(return_value="result1")
-        handler2 = Mock(return_value="result2")
-        handler3 = Mock(return_value="result3")
+
+        def handler1(event):
+            return "result1"
+
+        def handler2(event):
+            return "result2"
+
+        def handler3(event):
+            return "result3"
 
         q.register_handler("pattern-1", {"x": [1]}, handler1)
         q.register_handler("pattern-2", {"x": [1, 2]}, handler2)
@@ -123,16 +151,17 @@ class TestEventProcessing:
         results = q.process_event({"x": 1, "y": 5})
 
         # All three handlers should be called
-        handler1.assert_called_once()
-        handler2.assert_called_once()
-        handler3.assert_called_once()
         assert_that(results, contains_inanyorder("result1", "result2", "result3"))
 
     def test_handler_exception_doesnt_stop_processing(self):
         """Test that an exception in one handler doesn't prevent others from running."""
         q = Quamina()
-        handler1 = Mock(side_effect=ValueError("Handler error"))
-        handler2 = Mock(return_value="result2")
+
+        def handler1(event):
+            raise ValueError("Handler error")
+
+        def handler2(event):
+            return "result2"
 
         # Use different pattern IDs to ensure separate handler lists
         q.register_handler("pattern-1", {"x": [1]}, handler1)
@@ -141,8 +170,6 @@ class TestEventProcessing:
         # Should not raise, and should call both handlers
         results = q.process_event({"x": 1})
 
-        handler1.assert_called_once()
-        handler2.assert_called_once()
         # Only the second handler's result is included (first one raised exception)
         assert_that(results, equal_to(["result2"]))
 

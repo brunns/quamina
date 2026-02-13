@@ -58,9 +58,9 @@ xc example    # Try the examples
 
 Run `xc` or `xc --no-tty` to see all available tasks.
 
-### Git Pre-commit Hook
+### Claude Code Pre-commit Hook
 
-A pre-commit hook is installed at `.git/hooks/pre-commit` that automatically runs `xc pc` before each commit. This ensures all code is formatted, linted, and tested before committing.
+A pre-commit hook is configured at `.claude/hooks/pre-commit-check` that automatically runs `xc pc` before each commit when using Claude Code. This ensures all code is formatted, linted, and tested before committing.
 
 ## Tasks
 

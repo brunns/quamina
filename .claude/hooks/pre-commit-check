@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Claude Code pre-commit hook
+# Runs "xc pc" before commits to ensure code quality
+
+set -e
+
+echo "🔍 Running pre-commit checks (xc pc)..."
+xc pc
+
+echo "✅ Pre-commit checks passed!"
