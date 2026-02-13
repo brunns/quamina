@@ -155,55 +155,26 @@ def test_delete_nonexistent_pattern():
     q.delete_patterns("nonexistent-pattern")
 
 
-def test_string_matching():
-    """Test matching with string values."""
+@pytest.mark.parametrize(
+    ("pattern_id", "field", "matching_values", "matching_value", "non_matching_value"),
+    [
+        ("string-pattern", "name", ["Alice", "Bob"], "Alice", "Charlie"),
+        ("number-pattern", "count", [42, 100], 42, 50),
+        ("bool-pattern", "active", [True], True, False),  # noqa: FBT003
+        ("null-pattern", "value", [None], None, "something"),
+    ],
+    ids=["string", "numeric", "boolean", "null"],
+)
+def test_value_type_matching(pattern_id, field, matching_values, matching_value, non_matching_value):
+    """Test matching with different value types."""
     q = Quamina()
 
-    q.add_pattern("string-pattern", {"name": ["Alice", "Bob"]})
+    q.add_pattern(pattern_id, {field: matching_values})
 
-    matches = q.matches_for_event({"name": "Alice"})
-    assert_that(matches, contains_inanyorder("string-pattern"))
+    matches = q.matches_for_event({field: matching_value})
+    assert_that(matches, contains_inanyorder(pattern_id))
 
-    matches = q.matches_for_event({"name": "Charlie"})
-    assert_that(matches, empty())
-
-
-def test_numeric_matching():
-    """Test matching with numeric values."""
-    q = Quamina()
-
-    q.add_pattern("number-pattern", {"count": [42, 100]})
-
-    matches = q.matches_for_event({"count": 42})
-    assert_that(matches, contains_inanyorder("number-pattern"))
-
-    matches = q.matches_for_event({"count": 50})
-    assert_that(matches, empty())
-
-
-def test_boolean_matching():
-    """Test matching with boolean values."""
-    q = Quamina()
-
-    q.add_pattern("bool-pattern", {"active": [True]})  # noqa: FBT003
-
-    matches = q.matches_for_event({"active": True})
-    assert_that(matches, contains_inanyorder("bool-pattern"))
-
-    matches = q.matches_for_event({"active": False})
-    assert_that(matches, empty())
-
-
-def test_null_matching():
-    """Test matching with null values."""
-    q = Quamina()
-
-    q.add_pattern("null-pattern", {"value": [None]})
-
-    matches = q.matches_for_event({"value": None})
-    assert_that(matches, contains_inanyorder("null-pattern"))
-
-    matches = q.matches_for_event({"value": "something"})
+    matches = q.matches_for_event({field: non_matching_value})
     assert_that(matches, empty())
 
 
