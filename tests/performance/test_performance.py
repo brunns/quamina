@@ -29,6 +29,8 @@ To run these benchmarks:
     xc bench
 """
 
+import pytest
+
 from quamina import Quamina
 
 
@@ -83,20 +85,10 @@ class PurePythonMatcher:
         return True
 
 
-def test_simple_pattern_quamina(benchmark):
-    """Benchmark Quamina with a simple pattern."""
-    q = Quamina()
-    q.add_pattern("test", {"x": [1, 2, 3]})
-
-    event = {"x": 2}
-    result = benchmark(q.matches_for_event, event)
-
-    assert result == ["test"]
-
-
-def test_simple_pattern_python(benchmark):
-    """Benchmark pure Python with a simple pattern."""
-    matcher = PurePythonMatcher()
+@pytest.mark.parametrize("impl", ["quamina", "python"], ids=lambda x: x)
+def test_simple_pattern(benchmark, impl):
+    """Benchmark with a simple pattern."""
+    matcher = Quamina() if impl == "quamina" else PurePythonMatcher()
     matcher.add_pattern("test", {"x": [1, 2, 3]})
 
     event = {"x": 2}
@@ -105,24 +97,10 @@ def test_simple_pattern_python(benchmark):
     assert result == ["test"]
 
 
-def test_many_patterns_quamina(benchmark):
-    """Benchmark Quamina with many patterns."""
-    q = Quamina()
-
-    # Add 100 patterns
-    for i in range(100):
-        q.add_pattern(f"pattern-{i}", {"value": [i]})
-
-    # Event that matches pattern-50
-    event = {"value": 50}
-    result = benchmark(q.matches_for_event, event)
-
-    assert result == ["pattern-50"]
-
-
-def test_many_patterns_python(benchmark):
-    """Benchmark pure Python with many patterns."""
-    matcher = PurePythonMatcher()
+@pytest.mark.parametrize("impl", ["quamina", "python"], ids=lambda x: x)
+def test_many_patterns(benchmark, impl):
+    """Benchmark with many patterns (100)."""
+    matcher = Quamina() if impl == "quamina" else PurePythonMatcher()
 
     # Add 100 patterns
     for i in range(100):
@@ -135,28 +113,10 @@ def test_many_patterns_python(benchmark):
     assert result == ["pattern-50"]
 
 
-def test_complex_nested_quamina(benchmark):
-    """Benchmark Quamina with complex nested patterns."""
-    q = Quamina()
-
-    pattern = {
-        "Image": {
-            "Width": [800, 1024, 1920],
-            "Height": [600, 768, 1080],
-        },
-        "Format": ["JPEG", "PNG"],
-    }
-    q.add_pattern("image", pattern)
-
-    event = {"Image": {"Width": 1920, "Height": 1080}, "Format": "PNG"}
-    result = benchmark(q.matches_for_event, event)
-
-    assert result == ["image"]
-
-
-def test_complex_nested_python(benchmark):
-    """Benchmark pure Python with complex nested patterns."""
-    matcher = PurePythonMatcher()
+@pytest.mark.parametrize("impl", ["quamina", "python"], ids=lambda x: x)
+def test_complex_nested(benchmark, impl):
+    """Benchmark with complex nested patterns."""
+    matcher = Quamina() if impl == "quamina" else PurePythonMatcher()
 
     pattern = {
         "Image": {
@@ -173,24 +133,10 @@ def test_complex_nested_python(benchmark):
     assert result == ["image"]
 
 
-def test_multiple_matches_quamina(benchmark):
-    """Benchmark Quamina with multiple matching patterns."""
-    q = Quamina()
-
-    # Add patterns that will all match
-    q.add_pattern("pattern-1", {"x": [1, 2, 3]})
-    q.add_pattern("pattern-2", {"x": [1, 4, 5]})
-    q.add_pattern("pattern-3", {"x": [1, 6, 7]})
-
-    event = {"x": 1}
-    result = benchmark(q.matches_for_event, event)
-
-    assert len(result) == 3
-
-
-def test_multiple_matches_python(benchmark):
-    """Benchmark pure Python with multiple matching patterns."""
-    matcher = PurePythonMatcher()
+@pytest.mark.parametrize("impl", ["quamina", "python"], ids=lambda x: x)
+def test_multiple_matches(benchmark, impl):
+    """Benchmark with multiple matching patterns."""
+    matcher = Quamina() if impl == "quamina" else PurePythonMatcher()
 
     # Add patterns that will all match
     matcher.add_pattern("pattern-1", {"x": [1, 2, 3]})
@@ -203,23 +149,10 @@ def test_multiple_matches_python(benchmark):
     assert len(result) == 3
 
 
-def test_no_matches_quamina(benchmark):
-    """Benchmark Quamina when no patterns match."""
-    q = Quamina()
-
-    # Add patterns that won't match
-    for i in range(50):
-        q.add_pattern(f"pattern-{i}", {"value": [i]})
-
-    event = {"value": 999}
-    result = benchmark(q.matches_for_event, event)
-
-    assert result == []
-
-
-def test_no_matches_python(benchmark):
-    """Benchmark pure Python when no patterns match."""
-    matcher = PurePythonMatcher()
+@pytest.mark.parametrize("impl", ["quamina", "python"], ids=lambda x: x)
+def test_no_matches(benchmark, impl):
+    """Benchmark when no patterns match."""
+    matcher = Quamina() if impl == "quamina" else PurePythonMatcher()
 
     # Add patterns that won't match
     for i in range(50):
@@ -231,24 +164,10 @@ def test_no_matches_python(benchmark):
     assert result == []
 
 
-def test_large_event_quamina(benchmark):
-    """Benchmark Quamina with a large event."""
-    q = Quamina()
-
-    q.add_pattern("target", {"important_field": [42]})
-
-    # Large event with many fields
-    event = {f"field_{i}": i for i in range(100)}
-    event["important_field"] = 42
-
-    result = benchmark(q.matches_for_event, event)
-
-    assert result == ["target"]
-
-
-def test_large_event_python(benchmark):
-    """Benchmark pure Python with a large event."""
-    matcher = PurePythonMatcher()
+@pytest.mark.parametrize("impl", ["quamina", "python"], ids=lambda x: x)
+def test_large_event(benchmark, impl):
+    """Benchmark with a large event."""
+    matcher = Quamina() if impl == "quamina" else PurePythonMatcher()
 
     matcher.add_pattern("target", {"important_field": [42]})
 
@@ -261,24 +180,10 @@ def test_large_event_python(benchmark):
     assert result == ["target"]
 
 
-def test_many_patterns_1000_quamina(benchmark):
-    """Benchmark Quamina with 1000 patterns (realistic production scale)."""
-    q = Quamina()
-
-    # Add 1000 patterns simulating different event types
-    for i in range(1000):
-        q.add_pattern(f"pattern-{i}", {"event_type": [f"type-{i}"], "value": [i]})
-
-    # Event that matches pattern-500
-    event = {"event_type": "type-500", "value": 500}
-    result = benchmark(q.matches_for_event, event)
-
-    assert result == ["pattern-500"]
-
-
-def test_many_patterns_1000_python(benchmark):
-    """Benchmark pure Python with 1000 patterns (realistic production scale)."""
-    matcher = PurePythonMatcher()
+@pytest.mark.parametrize("impl", ["quamina", "python"], ids=lambda x: x)
+def test_many_patterns_1000(benchmark, impl):
+    """Benchmark with 1000 patterns (realistic production scale)."""
+    matcher = Quamina() if impl == "quamina" else PurePythonMatcher()
 
     # Add 1000 patterns simulating different event types
     for i in range(1000):
@@ -291,12 +196,13 @@ def test_many_patterns_1000_python(benchmark):
     assert result == ["pattern-500"]
 
 
-def test_zzz_summary(benchmark):
+@pytest.mark.parametrize("impl", ["quamina"], ids=lambda x: x)
+def test_zzz_summary(benchmark, impl):
     """Summary: Key performance comparison (runs last due to name sorting)."""
     # This test ensures summary info is visible at the end
-    q = Quamina()
-    q.add_pattern("test", {"x": [1]})
-    benchmark(q.matches_for_event, {"x": 1})
+    matcher = Quamina() if impl == "quamina" else PurePythonMatcher()
+    matcher.add_pattern("test", {"x": [1]})
+    benchmark(matcher.matches_for_event, {"x": 1})
 
     print("\n" + "=" * 70)
     print("PERFORMANCE SUMMARY")
