@@ -199,6 +199,16 @@ Requires: build
 uv run pytest tests/performance/ --benchmark-only --benchmark-columns=min,mean,stddev,ops --benchmark-sort=name --quiet -s
 ```
 
+### docs
+
+Build and view the documentation
+
+```sh
+cd docs
+uv run sphinx-build -b html . _build/html
+open _build/html/index.html
+```
+
 ### clean
 
 Clean build artifacts
@@ -210,5 +220,6 @@ cd ..
 rm -rf .pytest_cache .ruff_cache .coverage
 rm -rf src/quamina/__pycache__ tests/__pycache__
 find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+rm -rf docs/_build
 echo "✅ Cleaned build artifacts"
 ```
