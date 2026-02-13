@@ -2,21 +2,170 @@ name: Continuous Integration
 
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
   schedule:
-    - cron: "0 6 * * MON" # Every Monday morning
+    - cron: '0 15 * * THU'  # Every Thursday afternoon
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: 'Test'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python: ['3.14']
+        os: ['ubuntu-latest']
+
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          enable-cache: true
-      - uses: joerdav/setup-xc@v1
+          go-version: '1.23'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python ${{ matrix.python }}
+        run: uv python install ${{ matrix.python }}
+      - name: Build Go library
+        run: |
+          cd go-quamina
+          make linux
+          cp libquamina.so ../src/quamina/lib/
+      - name: Install dependencies
+        run: uv sync
+      - name: Run Tests
+        run: uv run pytest tests/unit/
 
-      - run: xc test
-      - run: xc lint
+  test-py-versions:
+    name: 'Test Python versions'
+    needs: test
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        python: ['3.13', '3.12', '3.11']
+        os: ['ubuntu-latest']
+        experimental: [false]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python ${{ matrix.python }}
+        run: uv python install ${{ matrix.python }}
+      - name: Build Go library
+        run: |
+          cd go-quamina
+          make linux
+          cp libquamina.so ../src/quamina/lib/
+      - name: Install dependencies
+        run: uv sync
+      - name: Run Tests
+        run: uv run pytest tests/unit/
+
+  test-oses:
+    name: 'Test OSes'
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python: ['3.14']
+        os: ['windows-latest', 'macos-latest']
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python ${{ matrix.python }}
+        run: uv python install ${{ matrix.python }}
+      - name: Build Go library (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd go-quamina
+          go build -buildmode=c-shared -o libquamina.dll wrapper.go
+          cp libquamina.dll ../src/quamina/lib/
+      - name: Build Go library (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cd go-quamina
+          make darwin
+          cp libquamina.dylib ../src/quamina/lib/
+      - name: Install dependencies
+        run: uv sync
+      - name: Run Tests
+        run: uv run pytest tests/unit/
+
+  coverage:
+    name: 'Check coverage'
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python: ['3.14']
+        os: ['ubuntu-latest']
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python ${{ matrix.python }}
+        run: uv python install ${{ matrix.python }}
+      - name: Build Go library
+        run: |
+          cd go-quamina
+          make linux
+          cp libquamina.so ../src/quamina/lib/
+      - name: Install dependencies
+        run: uv sync
+      - name: Check coverage
+        run: uv run pytest tests/unit/ --cov=src/quamina --cov-report=term-missing --cov-fail-under=100
+
+  lint-etc:
+    name: 'Linting and type checking'
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python: ['3.14']
+        os: ['ubuntu-latest']
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python ${{ matrix.python }}
+        run: uv python install ${{ matrix.python }}
+      - name: Build Go library
+        run: |
+          cd go-quamina
+          make linux
+          cp libquamina.so ../src/quamina/lib/
+      - name: Install dependencies
+        run: uv sync
+      - name: Check format
+        run: uv run ruff format . --check
+      - name: Lint
+        run: uv run ruff check .
+      - name: Check types
+        run: uv run pyright
+      - name: Lint Go code
+        run: |
+          cd go-quamina
+          go fmt ./...
+          go vet ./...
