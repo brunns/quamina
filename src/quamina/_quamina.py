@@ -2,9 +2,16 @@
 
 import ctypes
 import json
+import logging
 import platform
+from collections import defaultdict
 from pathlib import Path
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Self
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+logger = logging.getLogger(__name__)
 
 
 class QuaminaError(Exception):
@@ -121,6 +128,7 @@ class Quamina:
         """Create a new Quamina instance."""
         self._lib = QuaminaLibrary()
         self._handle = self._lib.new()
+        self._handlers: dict[str, list[Callable[[dict[str, Any]], Any]]] = defaultdict(list)
 
     def __del__(self) -> None:
         """Clean up the Quamina instance."""
@@ -181,3 +189,98 @@ class Quamina:
         """
         event_json = json.dumps(event)
         return self._lib.matches_for_event(self._handle, event_json)
+
+    def register_handler(
+        self,
+        pattern_id: str,
+        pattern: dict[str, Any],
+        handler: Callable[[dict[str, Any]], Any],
+    ) -> None:
+        """
+        Register a handler function for a pattern.
+
+        The handler will be called automatically when process_event() is called
+        with a matching event.
+
+        Args:
+            pattern_id: Unique identifier for this pattern
+            pattern: Pattern dictionary (will be converted to JSON)
+            handler: Callable that takes an event dict and returns anything
+
+        Raises:
+            QuaminaError: If the pattern is invalid
+        """
+        self.add_pattern(pattern_id, pattern)
+        self._handlers[pattern_id].append(handler)
+
+    def unregister_handlers(self, pattern_id: str) -> None:
+        """
+        Unregister all handlers for a pattern and delete the pattern.
+
+        Args:
+            pattern_id: Pattern identifier to unregister
+
+        Raises:
+            QuaminaError: If deletion fails
+        """
+        self.delete_patterns(pattern_id)
+        if pattern_id in self._handlers:
+            del self._handlers[pattern_id]
+
+    def process_event(self, event: dict[str, Any]) -> list[Any]:
+        """
+        Process an event by matching it and calling all registered handlers.
+
+        Handlers are called in the order they were registered. If a handler
+        raises an exception, it is logged and processing continues with the
+        next handler.
+
+        Args:
+            event: Event dictionary to process
+
+        Returns:
+            List of return values from all handlers that were called
+
+        Raises:
+            QuaminaError: If matching fails
+        """
+        matches = self.matches_for_event(event)
+        results = []
+
+        for pattern_id in matches:
+            handlers = self._handlers.get(pattern_id, [])
+            for handler in handlers:
+                try:
+                    result = handler(event)
+                    results.append(result)
+                except Exception:
+                    handler_name = getattr(handler, "__name__", repr(handler))
+                    logger.exception("Handler %s for pattern %s raised an exception", handler_name, pattern_id)
+
+        return results
+
+    def handler(self, pattern_id: str, pattern: dict[str, Any]) -> Callable[[Callable], Callable]:
+        """
+        Decorator to register a handler function for a pattern.
+
+        Example:
+            @q.handler("my-pattern", {"x": [1, 2, 3]})
+            def handle_event(event):
+                print(f"Got event: {event}")
+
+        Args:
+            pattern_id: Unique identifier for this pattern
+            pattern: Pattern dictionary (will be converted to JSON)
+
+        Returns:
+            Decorator function
+
+        Raises:
+            QuaminaError: If the pattern is invalid
+        """
+
+        def decorator(func: Callable[[dict[str, Any]], Any]) -> Callable[[dict[str, Any]], Any]:
+            self.register_handler(pattern_id, pattern, func)
+            return func
+
+        return decorator
