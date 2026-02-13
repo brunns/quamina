@@ -5,39 +5,35 @@ import platform
 
 import pytest
 from hamcrest import assert_that, equal_to
-from mockito import when
 
 from quamina import Quamina, QuaminaError
 from quamina._quamina import QuaminaLibrary
 
 
-def test_unsupported_platform(unstub):
+def test_unsupported_platform(when):
     """Test error when running on unsupported platform."""
     when(platform).system().thenReturn("AmigaOS")
     with pytest.raises(QuaminaError, match="Unsupported platform"):
         QuaminaLibrary()
-    unstub()
 
 
-def test_library_not_found(unstub):
+def test_library_not_found(when):
     """Test error when library file doesn't exist."""
     when(platform).system().thenReturn("Linux")
     when(pathlib.Path).exists(...).thenReturn(False)  # noqa: FBT003
     with pytest.raises(QuaminaError, match="library not found"):
         QuaminaLibrary()
-    unstub()
 
 
-def test_windows_library_name(unstub):
+def test_windows_library_name(when):
     """Test that Windows uses .dll extension."""
     when(platform).system().thenReturn("Windows")
     when(pathlib.Path).exists(...).thenReturn(False)  # noqa: FBT003
     with pytest.raises(QuaminaError, match="libquamina.dll"):
         QuaminaLibrary()
-    unstub()
 
 
-def test_instance_creation_failure(unstub):
+def test_instance_creation_failure(when):
     """Test error when Quamina instance creation fails."""
     lib = QuaminaLibrary()
 
@@ -46,8 +42,6 @@ def test_instance_creation_failure(unstub):
 
     with pytest.raises(QuaminaError, match="Failed to create"):
         lib.new()
-
-    unstub()
 
 
 def test_add_pattern_invalid_handle():
@@ -129,7 +123,7 @@ def test_special_characters():
     assert_that(len(matches), equal_to(1))
 
 
-def test_matches_for_event_null_pointer():
+def test_matches_for_event_null_pointer(when):
     """Test that matches_for_event handles NULL pointer from Go library gracefully.
 
     This tests the error path when the Go library returns NULL (catastrophic failure).
