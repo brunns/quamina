@@ -1,50 +1,53 @@
 """Test error handling and edge cases."""
 
-from unittest.mock import Mock, patch
+import pathlib
+import platform
 
 import pytest
 from hamcrest import assert_that, equal_to
+from mockito import when
 
 from quamina import Quamina, QuaminaError
 from quamina._quamina import QuaminaLibrary
 
 
-def test_unsupported_platform():
+def test_unsupported_platform(unstub):
     """Test error when running on unsupported platform."""
-    with patch("platform.system", return_value="AmigaOS"):
-        with pytest.raises(QuaminaError, match="Unsupported platform"):
-            QuaminaLibrary()
+    when(platform).system().thenReturn("AmigaOS")
+    with pytest.raises(QuaminaError, match="Unsupported platform"):
+        QuaminaLibrary()
+    unstub()
 
 
-def test_library_not_found():
+def test_library_not_found(unstub):
     """Test error when library file doesn't exist."""
-    with patch("platform.system", return_value="Linux"):
-        with patch("pathlib.Path.exists", return_value=False):
-            with pytest.raises(QuaminaError, match="library not found"):
-                QuaminaLibrary()
+    when(platform).system().thenReturn("Linux")
+    when(pathlib.Path).exists(...).thenReturn(False)  # noqa: FBT003
+    with pytest.raises(QuaminaError, match="library not found"):
+        QuaminaLibrary()
+    unstub()
 
 
-def test_windows_library_name():
+def test_windows_library_name(unstub):
     """Test that Windows uses .dll extension."""
-    with patch("platform.system", return_value="Windows"):
-        with patch("pathlib.Path.exists", return_value=False):
-            with pytest.raises(QuaminaError, match="libquamina.dll"):
-                QuaminaLibrary()
+    when(platform).system().thenReturn("Windows")
+    when(pathlib.Path).exists(...).thenReturn(False)  # noqa: FBT003
+    with pytest.raises(QuaminaError, match="libquamina.dll"):
+        QuaminaLibrary()
+    unstub()
 
 
-def test_instance_creation_failure():
+def test_instance_creation_failure(unstub):
     """Test error when Quamina instance creation fails."""
     lib = QuaminaLibrary()
-    original_new = lib._lib.QuaminaNew
 
     # Mock QuaminaNew to return 0 (failure)
-    lib._lib.QuaminaNew = Mock(return_value=0)
+    when(lib._lib).QuaminaNew().thenReturn(0)
 
     with pytest.raises(QuaminaError, match="Failed to create"):
         lib.new()
 
-    # Restore original function
-    lib._lib.QuaminaNew = original_new
+    unstub()
 
 
 def test_add_pattern_invalid_handle():
@@ -124,3 +127,19 @@ def test_special_characters():
 
     matches = q.matches_for_event({"path": "/test/path"})
     assert_that(len(matches), equal_to(1))
+
+
+def test_matches_for_event_null_pointer():
+    """Test that matches_for_event handles NULL pointer from Go library gracefully.
+
+    This tests the error path when the Go library returns NULL (catastrophic failure).
+    """
+    q = Quamina()
+    q.add_pattern("test", {"x": [1]})
+
+    # Mock the Go library to return None (simulating NULL pointer)
+    when(q._lib._lib).QuaminaMatchesForEvent(...).thenReturn(None)
+    matches = q._lib.matches_for_event(q._handle, '{"x": 1}')
+
+    # Should return empty list, not crash
+    assert_that(matches, equal_to([]))
