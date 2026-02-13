@@ -476,3 +476,6 @@ terraform/.terraform.lock.hcl
 src/quamina/lib/*.dylib
 src/quamina/lib/*.so
 src/quamina/lib/*.dll
+
+# But allow the quamina lib directory
+!src/quamina/lib/
