@@ -151,7 +151,7 @@ Run unit tests with coverage
 Requires: build
 
 ```sh
-uv run pytest tests/unit/ --durations=10 --cov-report term-missing --cov-fail-under 98 --cov quamina
+uv run pytest tests/unit/ --durations=10 --cov-report term-missing --cov-fail-under 100 --cov quamina
 ```
 
 ### example

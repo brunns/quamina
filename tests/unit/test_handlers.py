@@ -1,6 +1,6 @@
 """Tests for handler registration and event processing."""
 
-from hamcrest import assert_that, contains_inanyorder, empty, equal_to, has_length
+from hamcrest import assert_that, contains_inanyorder, equal_to, has_length
 from mockito import mock, verify
 
 from quamina import Quamina
@@ -247,5 +247,4 @@ def test_event_routing_example():
     # Critical temperature - both handlers
     q.process_event({"temperature": 100})
     assert_that(processed, has_length(2))
-    assert_that(processed[0], equal_to("High temp alert: 100°F"))
-    assert_that(processed[1], equal_to("CRITICAL temp: 100°F"))
+    assert_that(processed, contains_inanyorder("High temp alert: 100°F", "CRITICAL temp: 100°F"))

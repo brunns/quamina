@@ -19,7 +19,7 @@ class QuaminaError(Exception):
 
 
 class QuaminaLibrary:
-    """Low-level wrapper for the Quamina C library."""
+    """Low-level wrapper for the Quamina Golang library."""
 
     def __init__(self) -> None:
         """Load the Quamina shared library."""
