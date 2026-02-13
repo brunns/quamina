@@ -36,6 +36,7 @@ ignore = ["COM812", "ISC001", "D", "PGH003"]
 "tests/*" = ["S101", "S105", "S106", "PLR2004", "E501", "ANN", "INP", "FBT001", "FBT002", "S314", "SIM117", "SLF001", "RUF043", "RUF100", "ARG001", "PT009"]
 "tests/performance/*" = ["S101", "ANN", "INP", "D", "T201", "FURB105"]
 "examples/*" = ["T201", "INP001", "EXE001", "ANN"]
+"docs/*" = ["INP001", "A001", "ANN"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 5
