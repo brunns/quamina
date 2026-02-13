@@ -18,9 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: '1.23'
+          go-version-file: 'go-quamina/go.mod'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Set up Python ${{ matrix.python }}
@@ -50,9 +50,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: '1.23'
+          go-version-file: 'go-quamina/go.mod'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Set up Python ${{ matrix.python }}
@@ -79,9 +79,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: '1.23'
+          go-version-file: 'go-quamina/go.mod'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Set up Python ${{ matrix.python }}
@@ -115,9 +115,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: '1.23'
+          go-version-file: 'go-quamina/go.mod'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Set up Python ${{ matrix.python }}
@@ -144,9 +144,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: '1.23'
+          go-version-file: 'go-quamina/go.mod'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Set up Python ${{ matrix.python }}
