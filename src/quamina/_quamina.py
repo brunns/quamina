@@ -263,11 +263,6 @@ class Quamina:
         """
         Decorator to register a handler function for a pattern.
 
-        Example:
-            @q.handler("my-pattern", {"x": [1, 2, 3]})
-            def handle_event(event):
-                print(f"Got event: {event}")
-
         Args:
             pattern_id: Unique identifier for this pattern
             pattern: Pattern dictionary (will be converted to JSON)
@@ -277,6 +272,12 @@ class Quamina:
 
         Raises:
             QuaminaError: If the pattern is invalid
+
+        Example::
+
+            @q.handler("my-pattern", {"x": [1, 2, 3]})
+            def handle_event(event):
+                print(f"Got event: {event}")
         """
 
         def decorator(func: Callable[[dict[str, Any]], Any]) -> Callable[[dict[str, Any]], Any]:
